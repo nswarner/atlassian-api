@@ -8,15 +8,20 @@ import os
 
 class JiraAPI(object):
 
+    # Initialize from environment variables
     def __init__(self):
 
+        # Cloud URL
         self.jira_url = os.getenv("JIRA_URL")
+        # Encoded token, `email:api_token` as base64
         self.jira_token = os.getenv("ENCODED_JIRA_TOKEN")
+        # Reusable headers
         self.headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Basic {self.jira_token}',
         }
 
+        # Check if the environment variables are set, abort otherwise
         if self.jira_url is None:
             raise Exception("JIRA_URL is not set.")
             sys.exit(12)
@@ -24,15 +29,16 @@ class JiraAPI(object):
             raise Exception("JIRA_ENCODED_TOKEN is not set.")
             sys.exit(13)
 
+    # Do something someday with deleted object cleanup
     def __del__(self):
         pass
 
-    def ticket_already_exists(self, project_key, unique_term):
+    # Check if a given issue already exists based on a unique search term
+    def get_issue_already_exists(self, project_key, unique_desc):
 
         url = self.jira_url + "/rest/api/3/search"
-
-        jql = f"project = {project_key} AND description ~ \"{unique_term}\""
-
+        # Search for the issue based on the unique search term
+        jql = f"project = {project_key} AND description ~ \"{unique_desc}\""
         payload = {
             'jql': jql,
             'fields': ['key', 'summary', 'description']
@@ -47,13 +53,17 @@ class JiraAPI(object):
         # Raise an exception if the request was unsuccessful
         response.raise_for_status()
 
+        # If the issue doesn't exist, 
         if len(response.json()["issues"]) == 0:
             return False
+        # Else issue exists
         else:
             return True
 
+    # Get the issue key based on a unique search term
     def get_issues(self, project_key, unique_desc = ""):
-        
+
+        # Search based on a unique description or just project        
         if unique_desc == "":
             jql = f"project = {project_key}"
         else:
@@ -67,7 +77,8 @@ class JiraAPI(object):
         issues = response.json()['issues']
         return issues
 
-    def create_issue(self, project_key, summary, description, issue_type):
+    # Create a new issue in a project, with subject, description, and type
+    def set_create_issue(self, project_key, summary, description, issue_type):
 
         url = self.jira_url + "/rest/api/2/issue"
 
@@ -92,10 +103,11 @@ class JiraAPI(object):
         if response.status_code == 201:
             return response.json()["key"]
         else:
-            print(f"Failed to create Jira ticket. Status code: {response.status_code}")
+            print(f"Failed to create Jira issue. Status code: {response.status_code}")
             return None
 
-    def close_issue(self, issue_key):
+    # Close an open Jira issue
+    def set_close_issue(self, issue_key):
 
         # Note: The id for the 'Close' transition can vary
         transition_payload = {'transition': {'id': '31'}}
@@ -104,8 +116,21 @@ class JiraAPI(object):
             headers = self.headers, 
             data = json.dumps(transition_payload))
         response.raise_for_status()
+        return True
 
-    def add_comment(self, issue_key, comment):
+    # Transition a Jira issue into In-Progress (assumed id:21)
+    def set_in_progress_issue(self, issue_key):
+
+        # Note: The id for the 'In Progress' transition can vary
+        transition_payload = {'transition': {'id': '21'}}
+        response = requests.post(
+            f'{self.jira_url}/rest/api/3/issue/{issue_key}/transitions', 
+            headers = self.headers, 
+            data = json.dumps(transition_payload))
+        response.raise_for_status()
+        return True
+
+    def set_add_comment(self, issue_key, comment):
 
         # The payload for adding a comment
         payload = {
@@ -125,13 +150,15 @@ class JiraAPI(object):
                 ]
             }
         }
+        # Add the comment
         response = requests.post(
             f'{self.jira_url}/rest/api/3/issue/{issue_key}/comment',
             headers = self.headers, 
             data = json.dumps(payload))
         response.raise_for_status()
+        return True
 
-    def reopen_issue(self, issue_key):
+    def set_reopen_issue(self, issue_key):
 
         # Note: The id for the 'Open' transition can vary
         transition_payload = {'transition': {'id': '11'}}
@@ -140,6 +167,7 @@ class JiraAPI(object):
             headers = self.headers, 
             data = json.dumps(transition_payload))
         response.raise_for_status()
+        return True
 
 
 if __name__ == '__main__':
