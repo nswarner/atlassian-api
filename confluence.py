@@ -106,9 +106,31 @@ class ConfluenceAPI(object):
             headers = self.headers,
         )
 
-        response.raise_for_status()  # This will raise an exception if there are any HTTP errors
+        response.raise_for_status()
 
         # Parse and print the JSON response from Confluence
         search_results = response.json()
         print(json.dumps(search_results, indent = 4))
         return search_results['results']
+    
+    def upload_attachment(self, page_id, file_path):
+
+        self.headers['X-Atlassian-Token'] = 'no-check'
+
+        # Open the file in binary mode
+        with open(file_path, 'rb') as file:
+            # Set the data payload of the request to the binary content of the file
+            files = {'file': file}
+
+            # Send a POST request to the 'Create attachment' endpoint
+            response = requests.post(
+                f'{self.confluence_url}/rest/api/content/{page_id}/child/attachment',
+                headers = self.headers,
+                files = files
+            )
+
+        response.raise_for_status()
+
+        # Parse and print the JSON response from Confluence
+        attachment_data = response.json()
+        print(json.dumps(attachment_data, indent = 4))
