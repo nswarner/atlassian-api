@@ -34,7 +34,7 @@ class JiraAPI(object):
         pass
 
     # Check if a given issue already exists based on a unique search term
-    def get_issue_already_exists(self, project_key, unique_desc):
+    def check_if_issue_already_exists(self, project_key, unique_desc):
 
         url = self.jira_url + "/rest/api/3/search"
         # Search for the issue based on the unique search term
@@ -60,7 +60,7 @@ class JiraAPI(object):
         else:
             return True
 
-    # Get the issue key based on a unique search term
+    # Get the issue key based on a unique search term, or all issues
     def get_issues(self, project_key, unique_desc = ""):
 
         # Search based on a unique description or just project        
@@ -78,7 +78,7 @@ class JiraAPI(object):
         return issues
 
     # Create a new issue in a project, with subject, description, and type
-    def set_create_issue(self, project_key, summary, description, issue_type):
+    def create_issue(self, project_key, summary, description, issue_type):
 
         url = self.jira_url + "/rest/api/2/issue"
 
@@ -107,7 +107,7 @@ class JiraAPI(object):
             return None
 
     # Close an open Jira issue
-    def set_close_issue(self, issue_key):
+    def close_issue(self, issue_key):
 
         # Note: The id for the 'Close' transition can vary
         transition_payload = {'transition': {'id': '31'}}
@@ -119,7 +119,7 @@ class JiraAPI(object):
         return True
 
     # Transition a Jira issue into In-Progress (assumed id:21)
-    def set_in_progress_issue(self, issue_key):
+    def set_issue_in_progress(self, issue_key):
 
         # Note: The id for the 'In Progress' transition can vary
         transition_payload = {'transition': {'id': '21'}}
@@ -130,7 +130,7 @@ class JiraAPI(object):
         response.raise_for_status()
         return True
 
-    def set_add_comment(self, issue_key, comment):
+    def add_comment_to_issue(self, issue_key, comment):
 
         # The payload for adding a comment
         payload = {
@@ -158,7 +158,7 @@ class JiraAPI(object):
         response.raise_for_status()
         return True
 
-    def set_reopen_issue(self, issue_key):
+    def reopen_closed_issue(self, issue_key):
 
         # Note: The id for the 'Open' transition can vary
         transition_payload = {'transition': {'id': '11'}}
